@@ -1,0 +1,58 @@
+services:
+  mysql:
+    build:
+      context: ./dockerfiles/mysql
+      args:
+        - MYSQL_VERSION=8.0
+      dockerfile: Dockerfile
+    container_name: dj-mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=${DB_DATABASE}
+      - MYSQL_USER=admin
+      - MYSQL_PASSWORD=admin
+      - TZ=PRC
+    volumes:
+      - .data/mysql:/var/lib/mysql
+    ports:
+      - "${DOCKER_MYSQL}:3306"
+    networks:
+      - dj-backend
+
+  redis:
+    build:
+      context: ./dockerfiles/redis
+      args:
+        - REDIS_VERSION=5.0
+      dockerfile: Dockerfile
+    container_name: dj-redis
+    ports:
+      - "${DOCKER_REDIS}:6379"
+    volumes:
+      - .data/redis:/data
+    networks:
+      - dj-backend
+
+  php:
+    build:
+      context: ./dockerfiles/php
+      dockerfile: Dockerfile
+      args:
+        - PHP_VERSION=8.2-alpine
+        - CHANGE_SOURCE=${DOCKER_CHANGE_SOURCE}
+    container_name: dj-php
+    environment:
+      - APP_ENV=${APP_ENV}
+    volumes:
+      - .:/var/www/project
+    ports:
+      - "${DOCKER_PHP_HTTP}:9501"
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - dj-backend
+
+networks:
+  dj-backend:
+    driver: bridge
